@@ -12,8 +12,14 @@ test.beforeEach('Establishing mqtt client', async (t) => {
   }
 })
 
-test('Initialize Server', (t) => {
+test('Initialize Server', async (t) => {
   const service = new MqttService(t.context.mqtt)
-  t.context.mqtt.publish('hallo','world',{retain: false})
+
+  const observer = service.observe('#/hallo')
+    .subscribe((value) => {
+      console.log (value)
+    })
+
+  t.context.mqtt.publish('test/hallo','world',{retain: false})
 
 })

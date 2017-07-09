@@ -1,6 +1,5 @@
 // import { BehaviorSubject } from 'rxjs/BehaviorSubject'
 import { Observable } from 'rxjs/Observable'
-// import { Observer } from 'rxjs/Observer'
 import { UsingObservable } from 'rxjs/observable/UsingObservable'
 import { Subject } from 'rxjs/Subject'
 import { Subscription, AnonymousSubscription } from 'rxjs/Subscription'
