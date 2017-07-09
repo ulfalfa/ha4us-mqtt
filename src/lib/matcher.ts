@@ -26,7 +26,13 @@ export class Matcher {
     this._regexp = new RegExp('^' +
          aTopicPattern.replace(/\+/g, '([^\/]*)').replace(/#/g, '(.*?)') + '$')
     this._pattern = aTopicPattern
-    this._topic = aTopicPattern.substring(0, aTopicPattern.indexOf('#'))
+
+    let hashPos = aTopicPattern.indexOf('#')
+    if (hashPos > -1) {
+      this._topic = aTopicPattern.substring(0, hashPos + 1)
+    } else {
+      this._topic = aTopicPattern
+    }
   }
 
   get regexp (): RegExp {

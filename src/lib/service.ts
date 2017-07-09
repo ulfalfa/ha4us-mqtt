@@ -5,6 +5,7 @@ import { UsingObservable } from 'rxjs/observable/UsingObservable'
 import { Subject } from 'rxjs/Subject'
 import { Subscription, AnonymousSubscription } from 'rxjs/Subscription'
 import 'rxjs/add/observable/merge'
+import 'rxjs/add/observable/fromEvent'
 import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/publishReplay'
 
@@ -20,7 +21,7 @@ export class MqttService {
   /** a map of all mqtt observables by filter */
   public observables: { [filter: string]: Observable<Ha4usMQTT.Message>} = {}
   /** an observable of the last mqtt message */
-  public messages: Subject<Ha4usMQTT.IPacket> = new Subject<Ha4usMQTT.IPacket>()
+  public messages: Observable<Ha4usMQTT.IPacket> = new Observable<Ha4usMQTT.IPacket>()
 
   /**
    * The constructor needs [connection options]{@link MqttServiceOptions} regarding the broker and some
@@ -30,6 +31,15 @@ export class MqttService {
    * @param client an instance of MQTT.Client
    */
   constructor (private client: Ha4usMQTT.Client) {
+/*
+    this.messages = Observable.fromEvent(client, 'message',(topic, message, packet: Ha4usMQTT.IPacket) => ({
+      cmd: packet.cmd,
+      topic: topic,
+      message: message,
+      packet: packet
+    }))
+*/
+    this.messages = Observable.fromEvent(client, 'message')
   }
 
   /**
