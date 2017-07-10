@@ -8,8 +8,7 @@ import 'rxjs/add/observable/fromEvent'
 import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/publishReplay'
 
-import { Matcher,MqttMessage,Ha4usMessage,MqttClient,ISubscriptionGrant,MqttUtil} from '..'
-
+import { Matcher,MqttMessage,Ha4usMessage,MqttClient,ISubscriptionGrant,MqttUtil } from '..'
 
 /*35769
 /**
@@ -39,7 +38,7 @@ export class MqttService {
       packet: packet
     }))
 */
-    this.messages = Observable.fromEvent(client, 'message',(_topic,_message,packet)=>(<MqttMessage>packet));
+    this.messages = Observable.fromEvent(client, 'message',(_topic,_message,packet) => (packet as MqttMessage))
   }
 
   /**
@@ -57,14 +56,14 @@ export class MqttService {
     let pattern = new Matcher(filter)
 
     if (!this.observables[filter]) {
-      const rejected:Subject<MqttMessage> = new Subject()
+      const rejected: Subject<MqttMessage> = new Subject()
       this.observables[filter] = UsingObservable
         .create(
         // resourceFactory: Do the actual ref-counting MQTT subscription.
         // refcount is decreased on unsubscribe.
         () => {
           const subscription: Subscription = new Subscription()
-          this.client.subscribe(pattern.topic, (err:any, granted: ISubscriptionGrant[]) => {
+          this.client.subscribe(pattern.topic, (err: any, granted: ISubscriptionGrant[]) => {
             granted.forEach((_granted: ISubscriptionGrant) => {
               if (err ) {
                 rejected.error(`error subscribing '${pattern.topic}'`)
@@ -86,28 +85,28 @@ export class MqttService {
         // This part is not executed until the Observable returned by
         // `observe` gets actually subscribed.
         () => Observable.merge(rejected, this.messages))
-        .map (message=>{
-          let match = pattern.match(message.topic);
+        .map (message => {
+          let match = pattern.match(message.topic)
 
-          let msg = MqttUtil.convertBuffer(message.payload);
+          let msg = MqttUtil.convertBuffer(message.payload)
 
-          let retVal:Ha4usMessage = {
+          let retVal: Ha4usMessage = {
             topic : message.topic,
             val: msg.val ? msg.val : msg,
             ts : msg.ts ? msg.ts : new Date().valueOf(),
-            old:msg.old,
-            lc:msg.lc,
-            retain:message.retain
+            old: msg.old,
+            lc: msg.lc,
+            retain: message.retain
           }
 
           if (match) {
             retVal.match = {
-              pattern:pattern.pattern,
-              params:match
+              pattern: pattern.pattern,
+              params: match
             }
           }
 
-        return retVal;
+        return retVal
         })
         .filter((msg) => msg.hasOwnProperty('match'))
         .publishReplay(1)

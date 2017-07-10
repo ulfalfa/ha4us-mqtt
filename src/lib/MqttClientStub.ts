@@ -1,37 +1,35 @@
 
 import { MqttClient,ISubscriptionGrant } from '..'
-import {EventEmitter} from 'events';
-import * as Debug from 'debug';
+import { EventEmitter } from 'events'
+import * as Debug from 'debug'
 
-const debug = Debug('ha4us-mqtt:stub');
+const debug = Debug('ha4us-mqtt:stub')
 
-export class MqttClientStub  extends EventEmitter implements MqttClient  {
+export class MqttClientStub extends EventEmitter implements MqttClient {
 
-  subscribe(topic: string, options?: {qos?:number}, callback?:(err:any,grants:ISubscriptionGrant[])=>void): MqttClientStub {
-    debug ('Subscribe', topic);
-  let qos:number = (options && options.qos) ? options.qos : 0;
+  subscribe (topic: string, options?: {qos?: number}, callback?: (err: any,grants: ISubscriptionGrant[]) => void): MqttClientStub {
+    debug ('Subscribe', topic)
+    let qos: number = (options && options.qos) ? options.qos : 0
     if (callback) {
-      callback(null,[{topic:topic,qos:qos}]);
+      callback(null,[{topic: topic,qos: qos}])
     }
-    return this;
+    return this
 
   }
-  //subscribe(topic: string[], options?: {qos?:number}, cb?:(err:any,grants:ISubscriptionGrant[])=>void): Client;
-  unsubscribe(topic: string, options?: {qos?:number}, callback?:(err:any,grants:ISubscriptionGrant[])=>void): MqttClientStub {
-    debug ('Unsubscribe', topic);
+  unsubscribe (topic: string, options?: {qos?: number}, callback?: (err: any,grants: ISubscriptionGrant[]) => void): MqttClientStub {
+    debug ('Unsubscribe', topic)
 
-    let qos:number = (options && options.qos) ? options.qos : 0;
+    let qos: number = (options && options.qos) ? options.qos : 0
 
     if (callback) {
-      callback(null,[{topic:topic,qos:qos}]);
+      callback(null,[{topic: topic,qos: qos}])
     }
-    return this;
+    return this
 
   }
-  //unsubscribe(topic: string[], options?: {qos?:number}, cb?:(err:any,grants:ISubscriptionGrant[])=>void):Client;
-  publish(topic: string, message: string, options: {qos:0, retain:false}, callback?: Function): MqttClientStub {
-    let buffered = new Buffer(message);
-    let packet=  {
+  publish (topic: string, message: string, options: {qos: 0, retain: false}, callback?: Function): MqttClientStub {
+    let buffered = new Buffer(message)
+    let packet = {
       cmd: 'publish',
       qos: options.qos,
       dup: false,
@@ -39,11 +37,11 @@ export class MqttClientStub  extends EventEmitter implements MqttClient  {
       topic: topic,
       payload: buffered
     }
-    this.emit('message', topic, buffered, packet);
+    this.emit('message', topic, buffered, packet)
     if (callback) {
-      callback(null);
+      callback(null)
     }
-    return this;
+    return this
   }
 
 }

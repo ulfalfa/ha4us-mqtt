@@ -14,13 +14,13 @@ export function split (topic: string): string[] {
   return topic.split(MQTT_SEP)
 }
 
-export function inject (topic: string, index: number, count: number=999, ...members:string[] ): string {
+export function inject (topic: string, index: number, count: number= 999, ...members: string[] ): string {
   let topicArr = split(topic)
   topicArr.splice(index,count, ...members)
   return join(topicArr)
 }
 
-export function resolve (topic: string, command?: string,domain?: string, ): string {
+export function resolve (topic: string, command?: string,domain?: string ): string {
   if (topic.charAt(0) === MQTT_SEP) {
     return topic.substring(1)
   } else {
@@ -30,7 +30,7 @@ export function resolve (topic: string, command?: string,domain?: string, ): str
     if (command) {
       topic = inject(topic, 1,0,command)
     }
-    return topic;
+    return topic
   }
 }
 
@@ -46,14 +46,14 @@ export function isPattern (pattern: string): boolean {
   return !validTopic(pattern) && validPattern(pattern)
 }
 
-export function convertBuffer(message:Uint8Array):any {
-  let retVal:string = message.toString()
+export function convertBuffer (message: Uint8Array): any {
+  let retVal: string = message.toString()
 
   try {
-    retVal = JSON.parse(retVal);
+    retVal = JSON.parse(retVal)
+  } finally {
+    return retVal
   }
-  finally {
-    return retVal;
-  }
+
 }
 }

@@ -46,8 +46,6 @@ export class Matcher {
     return this._pattern
   }
 
-
-
   test (aTopicToTest: string): boolean {
     return this.regexp.test(aTopicToTest)
   }
