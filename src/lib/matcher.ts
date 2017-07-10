@@ -46,6 +46,8 @@ export class Matcher {
     return this._pattern
   }
 
+
+
   test (aTopicToTest: string): boolean {
     return this.regexp.test(aTopicToTest)
   }
@@ -53,15 +55,18 @@ export class Matcher {
   match (aTopicToTest: string): string[]|null {
     let matches: RegExpExecArray|null = this.regexp.exec(aTopicToTest)
     if (matches) {
+
       let params: string[] = []
       for (let i = 1;
             i < matches.length;
             i++) {
         params.push(matches[i])
       }
+
       return params
 
     } else {
+
       return null
     }
 

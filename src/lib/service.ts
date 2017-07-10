@@ -2,15 +2,16 @@
 import { Observable } from 'rxjs/Observable'
 import { UsingObservable } from 'rxjs/observable/UsingObservable'
 import { Subject } from 'rxjs/Subject'
-import { Subscription, AnonymousSubscription } from 'rxjs/Subscription'
+import { Subscription } from 'rxjs/Subscription'
 import 'rxjs/add/observable/merge'
 import 'rxjs/add/observable/fromEvent'
 import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/publishReplay'
 
-import { Ha4usMQTT, Matcher } from '..'
+import { Matcher,MqttMessage,Ha4usMessage,MqttClient,ISubscriptionGrant,MqttUtil} from '..'
 
-/*
+
+/*35769
 /**
  * With an instance of MqttService, you can observe and subscribe to MQTT in multiple places, e.g. in different components,
  * to only subscribe to the broker once per MQTT filter.
@@ -18,9 +19,9 @@ import { Ha4usMQTT, Matcher } from '..'
  */
 export class MqttService {
   /** a map of all mqtt observables by filter */
-  public observables: { [filter: string]: Observable<Ha4usMQTT.Message>} = {}
+  public observables: { [filter: string]: Observable<Ha4usMessage>} = {}
   /** an observable of the last mqtt message */
-  public messages: Observable<Ha4usMQTT.IPacket> = new Observable<Ha4usMQTT.IPacket>()
+  public messages: Observable<MqttMessage> = new Observable<MqttMessage>()
 
   /**
    * The constructor needs [connection options]{@link MqttServiceOptions} regarding the broker and some
@@ -29,7 +30,7 @@ export class MqttService {
    * @param options connection and creation options for MQTT.js and this service
    * @param client an instance of MQTT.Client
    */
-  constructor (private client: Ha4usMQTT.Client) {
+  constructor (private client: MqttClient) {
 /*
     this.messages = Observable.fromEvent(client, 'message',(topic, message, packet: Ha4usMQTT.IPacket) => ({
       cmd: packet.cmd,
@@ -38,7 +39,7 @@ export class MqttService {
       packet: packet
     }))
 */
-    this.messages = Observable.fromEvent(client, 'message')
+    this.messages = Observable.fromEvent(client, 'message',(_topic,_message,packet)=>(<MqttMessage>packet));
   }
 
   /**
@@ -49,22 +50,22 @@ export class MqttService {
    * @param  {string}                  filter
    * @return {Observable<MqttMessage>}        the observable you can subscribe to
    */
-  public observe (filter: string): Observable<Ha4usMQTT.Message> {
+  public observe (filter: string): Observable<Ha4usMessage> {
     if (!this.client) {
       throw new Error('mqtt client not connected')
     }
     let pattern = new Matcher(filter)
 
     if (!this.observables[filter]) {
-      const rejected = new Subject()
+      const rejected:Subject<MqttMessage> = new Subject()
       this.observables[filter] = UsingObservable
         .create(
         // resourceFactory: Do the actual ref-counting MQTT subscription.
         // refcount is decreased on unsubscribe.
         () => {
           const subscription: Subscription = new Subscription()
-          this.client.subscribe(pattern.topic, (err, granted: Ha4usMQTT.ISubscriptionGrant[]) => {
-            granted.forEach((_granted: Ha4usMQTT.ISubscriptionGrant) => {
+          this.client.subscribe(pattern.topic, (err:any, granted: ISubscriptionGrant[]) => {
+            granted.forEach((_granted: ISubscriptionGrant) => {
               if (err ) {
                 rejected.error(`error subscribing '${pattern.topic}'`)
               }
@@ -84,10 +85,33 @@ export class MqttService {
         // observableFactory: Create the observable that is consumed from.
         // This part is not executed until the Observable returned by
         // `observe` gets actually subscribed.
-        (subscription: AnonymousSubscription) => Observable.merge(rejected, this.messages))
-        .filter((msg: Ha4usMQTT.Message) => pattern.test(msg.topic))
+        () => Observable.merge(rejected, this.messages))
+        .map (message=>{
+          let match = pattern.match(message.topic);
+
+          let msg = MqttUtil.convertBuffer(message.payload);
+
+          let retVal:Ha4usMessage = {
+            topic : message.topic,
+            val: msg.val ? msg.val : msg,
+            ts : msg.ts ? msg.ts : new Date().valueOf(),
+            old:msg.old,
+            lc:msg.lc,
+            retain:message.retain
+          }
+
+          if (match) {
+            retVal.match = {
+              pattern:pattern.pattern,
+              params:match
+            }
+          }
+
+        return retVal;
+        })
+        .filter((msg) => msg.hasOwnProperty('match'))
         .publishReplay(1)
-        .refCount() as Observable<Ha4usMQTT.Message>
+        .refCount()
     }
     return this.observables[filter]
   }
