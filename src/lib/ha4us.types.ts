@@ -1,18 +1,19 @@
 import * as MQTT from 'mqtt'
+import {EventEmitter} from 'events';
 
-export namespace Ha4usMQTT {
-  export interface Message extends MQTT.IPacket {
+
+  export interface Ha4usMessage {
     /** the mqtt topic to which this message was published to */
     topic: string
     /** the if matched by the mqtt matcher here goes the data */
-    match: {
-      pattern: string;
-      params: string[];
-    },
-    val: any,
-    ts: number,
-    old: any,
-    lc: number,
+    match?: {
+      pattern: string
+      params: string[]
+    }
+    val: any
+    ts: number
+    old?: any
+    lc?: number
     retain: boolean
   }
 
@@ -29,9 +30,10 @@ export namespace Ha4usMQTT {
     dup: boolean
   }
 
-  export interface Client extends MQTT.Client {}
+  export interface MqttClient extends EventEmitter {
+    subscribe(topic: string, options?: {qos?:number}, cb?:(err:any,grants:ISubscriptionGrant[])=>void): MqttClient;
+    unsubscribe(topic: string, options?: {qos?:number}, cb?:(err:any,grants:ISubscriptionGrant[])=>void): MqttClient;
+    publish(topic: string, message: string, options?: {qos?:number, retain?:boolean}, callback?: Function): MqttClient;
 
-  export interface IPacket extends MQTT.IPacket {}
+  }
   export interface ISubscriptionGrant extends MQTT.ISubscriptionGrant {}
-
-}
