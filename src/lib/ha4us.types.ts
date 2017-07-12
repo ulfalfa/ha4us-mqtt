@@ -36,3 +36,7 @@ export interface MqttClient extends EventEmitter {
 
 }
 export interface ISubscriptionGrant extends MQTT.ISubscriptionGrant {}
+export interface PublishOptions {
+  retain: boolean
+  qos: number
+}

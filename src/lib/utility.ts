@@ -21,17 +21,17 @@ export function inject (topic: string, index: number, count: number= 999, ...mem
 }
 
 export function resolve (topic: string, command?: string,domain?: string ): string {
+
+  if (domain) {
+    topic = topic.replace(/\$/,domain + MQTT_SEP)
+  }
+
   if (topic.charAt(0) === MQTT_SEP) {
     return topic.substring(1)
-  } else {
-    if (topic.charAt(0) === '$' && domain) {
-      topic = domain + MQTT_SEP + topic.substring(1)
-    }
-    if (command) {
-      topic = inject(topic, 1,0,command)
-    }
-    return topic
+  } else if (command) {
+    topic = inject(topic, 1,0,command)
   }
+  return topic
 }
 
 export function validTopic (topic: string): boolean {
@@ -47,7 +47,7 @@ export function isPattern (pattern: string): boolean {
 }
 
 export function convertBuffer (message: Uint8Array): any {
-  let retVal: string = message.toString()
+  let retVal: string = new Buffer(message).toString()
 
   try {
     retVal = JSON.parse(retVal)

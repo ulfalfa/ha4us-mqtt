@@ -1,14 +1,8 @@
 // import { BehaviorSubject } from 'rxjs/BehaviorSubject'
-import { Observable } from 'rxjs/Observable'
+import { Observable,Observer,Subject,Subscription } from 'rxjs/Rx'
 import { UsingObservable } from 'rxjs/observable/UsingObservable'
-import { Subject } from 'rxjs/Subject'
-import { Subscription } from 'rxjs/Subscription'
-import 'rxjs/add/observable/merge'
-import 'rxjs/add/observable/fromEvent'
-import 'rxjs/add/operator/filter'
-import 'rxjs/add/operator/publishReplay'
 
-import { Matcher,MqttMessage,Ha4usMessage,MqttClient,ISubscriptionGrant,MqttUtil } from '..'
+import { Matcher,MqttMessage,Ha4usMessage,MqttClient,ISubscriptionGrant,MqttUtil,PublishOptions } from '..'
 
 /*35769
 /**
@@ -22,6 +16,8 @@ export class MqttService {
   /** an observable of the last mqtt message */
   public messages: Observable<MqttMessage> = new Observable<MqttMessage>()
 
+  public domain: string|undefined = undefined
+
   /**
    * The constructor needs [connection options]{@link MqttServiceOptions} regarding the broker and some
    * options to configure behavior of this service, like if the connection to the broker
@@ -30,14 +26,6 @@ export class MqttService {
    * @param client an instance of MQTT.Client
    */
   constructor (private client: MqttClient) {
-/*
-    this.messages = Observable.fromEvent(client, 'message',(topic, message, packet: Ha4usMQTT.IPacket) => ({
-      cmd: packet.cmd,
-      topic: topic,
-      message: message,
-      packet: packet
-    }))
-*/
     this.messages = Observable.fromEvent(client, 'message',(_topic,_message,packet) => (packet as MqttMessage))
   }
 
@@ -49,15 +37,15 @@ export class MqttService {
    * @param  {string}                  filter
    * @return {Observable<MqttMessage>}        the observable you can subscribe to
    */
-  public observe (filter: string): Observable<Ha4usMessage> {
+  public observe (filterInput: string): Observable<Ha4usMessage> {
     if (!this.client) {
       throw new Error('mqtt client not connected')
     }
-    let pattern = new Matcher(filter)
+    let pattern = new Matcher(MqttUtil.resolve(filterInput,'status',this.domain))
 
-    if (!this.observables[filter]) {
+    if (!this.observables[pattern.pattern]) {
       const rejected: Subject<MqttMessage> = new Subject()
-      this.observables[filter] = UsingObservable
+      this.observables[pattern.pattern] = UsingObservable
         .create(
         // resourceFactory: Do the actual ref-counting MQTT subscription.
         // refcount is decreased on unsubscribe.
@@ -76,8 +64,8 @@ export class MqttService {
             })
           })
           subscription.add(() => {
-            delete this.observables[filter]
-            this.client.unsubscribe(filter)
+            delete this.observables[pattern.pattern]
+            this.client.unsubscribe(pattern.topic)
           })
           return subscription
         },
@@ -92,10 +80,10 @@ export class MqttService {
 
           let retVal: Ha4usMessage = {
             topic : message.topic,
-            val: msg.val ? msg.val : msg,
-            ts : msg.ts ? msg.ts : new Date().valueOf(),
-            old: msg.old,
-            lc: msg.lc,
+            val: msg && msg.hasOwnProperty('val') ? msg.val : msg,
+            ts : (msg !== null) && msg.ts ? msg.ts : new Date().valueOf(),
+            old: msg && msg.old,
+            lc: msg && msg.lc,
             retain: message.retain
           }
 
@@ -112,7 +100,7 @@ export class MqttService {
         .publishReplay(1)
         .refCount()
     }
-    return this.observables[filter]
+    return this.observables[pattern.pattern]
   }
 
   /**
@@ -124,45 +112,33 @@ export class MqttService {
    * @param  {PublishOptions}   options
    * @return {Observable<void>}
    */
-/*
-  public publish(topic: string, message: any, options?: PublishOptions): Observable<void> {
+
+  public publish (topic: string, message: any, options?: PublishOptions): Observable<void> {
     if (!this.client) {
-      throw new Error('mqtt client not connected');
+      throw new Error('mqtt client not connected')
     }
     const source = Observable.create((obs: Observer<void>) => {
-      this.client.publish(topic, message, options, (err: Error) => {
+      this.client.publish(topic, JSON.stringify(message), options, (err: Error) => {
         if (err) {
-          obs.error(err);
+          obs.error(err)
         } else {
-          obs.complete();
+          obs.complete()
         }
-      });
-    });
-    return source;
-  }
-  */
-
-  /**
-   * This method publishes a message for a topic with optional options.
-   * If an error occurs, it will throw.
-   * @param  {string}           topic
-   * @param  {any}              message
-   * @param  {PublishOptions}   options
-   */
-
-/*
-  public unsafePublish(topic: string, message: any, options?: PublishOptions): void {
-    if (!this.client) {
-      throw new Error('mqtt client not connected');
-    }
-    this.client.publish(topic, message, options, (err: Error) => {
-      if (err) {
-        throw (err);
-      }
-    });
+      })
+    })
+    return source.toPromise()
   }
 
-}
-*/
+  public set (topic: string, value: any) {
+    return this.publish(MqttUtil.resolve(topic,'set',this.domain),value,{qos: 0, retain: false})
+  }
+
+  public async get (topic: string) {
+    let observer = this.observe(topic).take(1)
+
+    await this.publish(MqttUtil.resolve(topic,'get',this.domain),null,{qos: 0, retain: false})
+    return observer.toPromise()
+
+  }
 
 }

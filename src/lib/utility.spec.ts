@@ -25,7 +25,8 @@ test('resolve', t => {
   t.deepEqual(util.resolve('foo/bar/baz','xyz'),'foo/xyz/bar/baz')
   t.deepEqual(util.resolve('foo/bar/baz','xyz','domain'),'foo/xyz/bar/baz')
   t.deepEqual(util.resolve('$foo/bar/baz','xyz','domain'),'domain/xyz/foo/bar/baz')
-  t.deepEqual(util.resolve('/$foo/bar/baz','xyz','domain'),'$foo/bar/baz')
+  t.deepEqual(util.resolve('/$foo/bar/baz','xyz','domain'),'domain/foo/bar/baz')
+  t.deepEqual(util.resolve('/$foo/bar/baz','xyz','domain'),'domain/foo/bar/baz')
 })
 
 test('valid topic', t => {
