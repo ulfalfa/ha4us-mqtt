@@ -89,3 +89,59 @@ test ('can get', async (t) => {
   subscription.unsubscribe()
 
 })
+
+test('command loop', async (t) => {
+  const service = new MqttService(t.context.mqtt)
+  service.command('test/test', query => {
+    console.log ('Query hit')
+    query.goodbye = 'earth'
+    return query
+  })
+
+  let answer = await service.request('test/test',{hello: 'world'})
+  t.deepEqual(answer.val,{ hello: 'world', goodbye: 'earth'})
+
+})
+
+test('command loop - timeout (in time)', async (t) => {
+  const service = new MqttService(t.context.mqtt)
+  service.command('test/test', async query => {
+    console.log ('Query hit')
+
+    return new Promise((resolve) => {
+      query.goodbye = 'earth'
+      setTimeout(() => {
+        resolve(query)
+      },1000)
+    })
+  })
+
+  let answer = await service.request('test/test',{hello: 'world'},2000)
+  t.deepEqual(answer.val,{ hello: 'world', goodbye: 'earth'})
+
+})
+
+test('command loop - timeout (to late)', async (t) => {
+  const service = new MqttService(t.context.mqtt)
+  service.command('test/test', async query => {
+
+    return new Promise((resolve) => {
+      query.goodbye = 'earth'
+      setTimeout(() => {
+        resolve(query)
+      },2000)
+    })
+  })
+
+  let answer = service.request('test/test',{hello: 'world'},1000)
+  await t.throws(answer, /timeout/i)
+
+})
+
+test('command timeout loop (no answer)', async (t) => {
+  const service = new MqttService(t.context.mqtt)
+
+  let answer = service.request('test/test',{hello: 'world'})
+  await t.throws(answer, /timeout/i)
+
+})

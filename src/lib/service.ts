@@ -141,4 +141,36 @@ export class MqttService {
 
   }
 
+  public async command (topic: string, cb: (params: any) => Promise<any>) {
+    return this.observe('/' + MqttUtil.resolve(topic,'command') + '/+').subscribe(async message => {
+      let response = await cb(message.val)
+      let param = (message.match) ? message.match.params[0] : ''
+      let answerTopic = MqttUtil.resolve(MqttUtil.join([topic,param]),'status')
+      this.publish (answerTopic, response,{qos: 0,retain: false})
+    })
+  }
+
+  public async request (topic: string, body: any, timeout: number = 5000): Promise < any > {
+    topic = MqttUtil.join([topic,this.randomString(10)])
+
+    let commandTopic = MqttUtil.resolve(topic,'command')
+
+    let result = this.observe(topic).take(1).timeout(timeout).toPromise()
+
+    await this.publish(commandTopic,body,{retain: false,qos: 0})
+
+    return result
+
+  }
+
+  private randomString (len: number, bits: number = 36): string {
+    let outStr = ''
+    let newStr = ''
+    while (outStr.length < len) {
+      newStr = Math.random().toString(bits).slice(2)
+      outStr += newStr.slice(0, Math.min(newStr.length, (len - outStr.length)))
+    }
+    return outStr.toUpperCase()
+  }
+
 }
