@@ -92,7 +92,7 @@ test ('can get', async (t) => {
 
 test('command loop', async (t) => {
   const service = new MqttService(t.context.mqtt)
-  service.command('test/test', query => {
+  await service.command('test/test', query => {
     console.log ('Query hit')
     query.goodbye = 'earth'
     return query
@@ -105,7 +105,7 @@ test('command loop', async (t) => {
 
 test('command loop - timeout (in time)', async (t) => {
   const service = new MqttService(t.context.mqtt)
-  service.command('test/test', async query => {
+  await service.command('test/test', async query => {
     console.log ('Query hit')
 
     return new Promise((resolve) => {
@@ -117,13 +117,13 @@ test('command loop - timeout (in time)', async (t) => {
   })
 
   let answer = await service.request('test/test',{hello: 'world'},2000)
-  t.deepEqual(answer.val,{ hello: 'world', goodbye: 'earth'})
+  return t.deepEqual(answer.val,{ hello: 'world', goodbye: 'earth'})
 
 })
 
 test('command loop - timeout (to late)', async (t) => {
   const service = new MqttService(t.context.mqtt)
-  service.command('test/test', async query => {
+  await service.command('test/test', async query => {
 
     return new Promise((resolve) => {
       query.goodbye = 'earth'

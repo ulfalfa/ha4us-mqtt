@@ -136,7 +136,7 @@ export class MqttService {
   public async get (topic: string) {
     let observer = this.observe(topic).take(1)
 
-    await this.publish(MqttUtil.resolve(topic,'get',this.domain),null,{qos: 0, retain: false})
+    this.publish(MqttUtil.resolve(topic,'get',this.domain),null,{qos: 0, retain: false})
     return observer.toPromise()
 
   }
@@ -157,7 +157,7 @@ export class MqttService {
 
     let result = this.observe(topic).take(1).timeout(timeout).toPromise()
 
-    await this.publish(commandTopic,body,{retain: false,qos: 0})
+    this.publish(commandTopic,body,{retain: false,qos: 0})
 
     return result
 
